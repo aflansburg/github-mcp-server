@@ -149,7 +149,23 @@ func ListCommits(getClient GetClientFn, t translations.TranslationHelperFunc) (t
 				return mcp.NewToolResultError(fmt.Sprintf("failed to list commits: %s", string(body))), nil
 			}
 
-			r, err := json.Marshal(commits)
+			// Filter commit data to include only required fields
+			filteredCommits := make([]map[string]interface{}, 0, len(commits))
+			for _, commit := range commits {
+				filteredCommit := map[string]interface{}{
+					"sha":     commit.GetSHA(),
+					"node_id": commit.GetNodeID(),
+					"commit": map[string]interface{}{
+						"message": commit.GetCommit().GetMessage(),
+						"author": map[string]interface{}{
+							"name": commit.GetCommit().GetAuthor().GetName(),
+						},
+					},
+				}
+				filteredCommits = append(filteredCommits, filteredCommit)
+			}
+
+			r, err := json.Marshal(filteredCommits)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal response: %w", err)
 			}
